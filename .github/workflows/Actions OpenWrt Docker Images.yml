@@ -112,8 +112,8 @@ jobs:
           chmod +x files/etc/rc.local
 
       - name: Build RootFS (amd64)
-        #if: env.DOCKER_EXTERA_TAG == 'amd64'
         run: |
+          #if: env.DOCKER_EXTERA_TAG == 'amd64'
           cd immortalwrt-imagebuilder-$DEVICE_VERSION-$DEVICE_TARGET-$DEVICE_SUBTARGET.Linux-x86_64
           chmod +x $GITHUB_WORKSPACE/scripts/*
           $GITHUB_WORKSPACE/scripts/preset-terminal-tools.sh
@@ -127,7 +127,6 @@ jobs:
           rm -rf openwrt-imagebuilder*
 
       - name: Build & Push Image (amd64)
-        #if: env.DOCKER_EXTERA_TAG == 'amd64'
         uses: docker/build-push-action@v4
         with:
           platforms: ${{ env.DOCKER_IMAGE_ARCH }}
