@@ -102,6 +102,7 @@ jobs:
 
       - name: Download Image Builder
         run: |
+          set -x
           wget -q $PREFIX_URL/$DEVICE_TARGET/$DEVICE_SUBTARGET/immortalwrt-imagebuilder-$DEVICE_VERSION-$DEVICE_TARGET-$DEVICE_SUBTARGET.Linux-x86_64.tar.zst
 
       - name: Set Image Builder
