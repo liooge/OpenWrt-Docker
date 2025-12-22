@@ -53,6 +53,15 @@ find dl -size -1024c -exec rm -f {} \;
 
 # Compile
 echo "$(nproc) thread compile"
-make -j$(nproc) || make -j1 || make -j1 V=s
+if make -j$(nproc); then
+    echo "Parallel compile succeeded"
+elif make -j1; then
+    echo "Single thread compile succeeded"
+elif make -j1 V=s; then
+    echo "Verbose compile succeeded"
+else
+    echo "All compile attempts failed"
+    exit 1
+fi
 
 echo "Build complete. Artifacts are in $OPENWRT_PATH/bin"

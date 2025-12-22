@@ -25,9 +25,6 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@main
-
     - name: Check Server Performance
       run: |
         echo "警告⚠"
@@ -54,6 +51,16 @@ jobs:
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get -y clean
         sudo timedatectl set-timezone "$TZ"
+
+    - name: Combine Disks
+      uses: easimon/maximize-build-space@master
+      with:
+        swap-size-mb: 1024
+        temp-reserve-mb: 100
+        root-reserve-mb: 1024
+
+    - name: Checkout
+      uses: actions/checkout@main
 
     - name: Clone Source Code
       run: |
@@ -89,15 +96,42 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Compile Firmware
-      id: compile
+    - name: Compile Firmware (Parallel)
+      id: compile_parallel
+      continue-on-error: true
       run: |
         cd $OPENWRT_PATH
         mkdir -p files/etc/uci-defaults
         cp $GITHUB_WORKSPACE/scripts/init-settings.sh files/etc/uci-defaults/99-init-settings
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s
-        echo "status=success" >> $GITHUB_OUTPUT
+        make -j$(nproc)
+
+    - name: Compile Firmware (Retry -j1)
+      id: compile_single
+      if: steps.compile_parallel.outcome == 'failure'
+      continue-on-error: true
+      run: |
+        cd $OPENWRT_PATH
+        make -j1
+
+    - name: Compile Firmware (Retry -j1 V=s)
+      id: compile_verbose
+      if: steps.compile_parallel.outcome == 'failure' && steps.compile_single.outcome == 'failure'
+      run: |
+        cd $OPENWRT_PATH
+        make -j1 V=s
+
+    - name: Check Compile Status
+      id: compile
+      if: always()
+      run: |
+        if [ "${{ steps.compile_parallel.outcome }}" == "success" ] || \
+           [ "${{ steps.compile_single.outcome }}" == "success" ] || \
+           [ "${{ steps.compile_verbose.outcome }}" == "success" ]; then
+          echo "status=success" >> $GITHUB_OUTPUT
+        else
+          exit 1
+        fi
 
     - name: Generate Firmware
       if: steps.compile.outputs.status == 'success'
