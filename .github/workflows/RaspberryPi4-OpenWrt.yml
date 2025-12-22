@@ -1,6 +1,11 @@
 name: RaspberryPi4 OpenWrt
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '!README.md'
   workflow_dispatch:
   schedule:
     - cron: 0 17 * * *

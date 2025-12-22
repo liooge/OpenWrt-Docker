@@ -1,6 +1,11 @@
 name: ARMv8 Docker OpenWrt
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '!README.md'
   workflow_dispatch:
   schedule:
     - cron: 0 23 * * 5

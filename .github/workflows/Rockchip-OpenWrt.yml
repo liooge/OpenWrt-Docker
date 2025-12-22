@@ -1,6 +1,11 @@
 name: Rockchip OpenWrt
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '!README.md'
   workflow_dispatch:
   schedule:
     - cron: 0 18 * * *

@@ -1,6 +1,11 @@
 name: X86_64 Mini OpenWrt
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '!README.md'
   workflow_dispatch:
   schedule:
     - cron: 0 19 * * *

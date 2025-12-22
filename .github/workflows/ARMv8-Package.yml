@@ -1,6 +1,11 @@
 name: ARMv8 Package
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '!README.md'
   workflow_dispatch:
 #  schedule:
 #    - cron: 0 15 * * *
