@@ -138,11 +138,14 @@ jobs:
 
     - name: Download DL Package
       run: |
+        chmod +x $GITHUB_WORKSPACE/scripts/dl.sh
+        bash $GITHUB_WORKSPACE/scripts/dl.sh $OPENWRT_PATH
         cd $OPENWRT_PATH
         make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
+
 
     - name: Compile Firmware (Parallel)
       id: compile_parallel
