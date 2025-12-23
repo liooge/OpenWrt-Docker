@@ -113,10 +113,12 @@ find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/..\/..\/luci
 find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/..\/..\/lang\/golang\/golang-package.mk/$(TOPDIR)\/feeds\/packages\/lang\/golang\/golang-package.mk/g' {}
 find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' {}
 find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/PKG_SOURCE_URL:=@GHCODELOAD/PKG_SOURCE_URL:=https:\/\/codeload.github.com/g' {}
-find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/git:\/\/git.openwrt.org\/project\//https:\/\/github.com\/openwrt\//g' {}
-find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/https:\/\/git.openwrt.org\/project\//https:\/\/github.com\/openwrt\//g' {}
-find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/git:\/\/git.openwrt.org\/feed\//https:\/\/github.com\/openwrt\//g' {}
-find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/https:\/\/git.openwrt.org\/feed\//https:\/\/github.com\/openwrt\//g' {}
+# Global replace of git.openwrt.org to github.com/openwrt matches
+find . -name "*.mk" -o -name "Makefile" -o -name "feeds.conf.default" | xargs -r sed -i 's/git:\/\/git.openwrt.org\/project\//https:\/\/github.com\/openwrt\//g'
+find . -name "*.mk" -o -name "Makefile" -o -name "feeds.conf.default" | xargs -r sed -i 's/https:\/\/git.openwrt.org\/project\//https:\/\/github.com\/openwrt\//g'
+find . -name "*.mk" -o -name "Makefile" -o -name "feeds.conf.default" | xargs -r sed -i 's/git:\/\/git.openwrt.org\/feed\//https:\/\/github.com\/openwrt\//g'
+find . -name "*.mk" -o -name "Makefile" -o -name "feeds.conf.default" | xargs -r sed -i 's/https:\/\/git.openwrt.org\/feed\//https:\/\/github.com\/openwrt\//g'
+
 
 
 # 取消主题默认设置

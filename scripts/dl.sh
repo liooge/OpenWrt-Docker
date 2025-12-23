@@ -79,3 +79,45 @@ else
     echo "  $USTREAM_FILE already exists."
 fi
 
+# firmware-utils 2024-10-20-4b763892
+FIRMWARE_UTILS_FILE="firmware-utils-2024-10-20-4b763892.tar.xz"
+if [ ! -f "$DL_DIR/$FIRMWARE_UTILS_FILE" ]; then
+    echo "Checking $FIRMWARE_UTILS_FILE..."
+    echo "  Manual repack from GitHub mirror..."
+
+    TMP_WORK_DIR="$DL_DIR/tmp_repack_fw"
+    mkdir -p "$TMP_WORK_DIR"
+    
+    # Clone to a specifically named directory
+    REPO_DIR_NAME="firmware-utils-2024-10-20-4b763892"
+    
+    # Use the official GitHub mirror
+    git clone https://github.com/openwrt/firmware-utils.git "$TMP_WORK_DIR/$REPO_DIR_NAME"
+    if [ $? -eq 0 ]; then
+        cd "$TMP_WORK_DIR/$REPO_DIR_NAME"
+        # The full hash from the user's error log
+        git checkout 4b7638925d3eac03e614e40bc30cb49f5877c46d
+        rm -rf .git
+        cd ..
+        
+        # Tar and compress
+        tar --numeric-owner --owner=0 --group=0 --sort=name -cJf "$DL_DIR/$FIRMWARE_UTILS_FILE" "$REPO_DIR_NAME"
+        
+        if [ $? -eq 0 ]; then
+             echo "  Success: $FIRMWARE_UTILS_FILE created."
+        else
+             echo "  Failed to pack $FIRMWARE_UTILS_FILE"
+        fi
+        
+        # Cleanup
+        cd "$DL_DIR"
+        rm -rf "$TMP_WORK_DIR"
+    else
+        echo "  Failed to clone firmware-utils from GitHub"
+        rm -rf "$TMP_WORK_DIR"
+    fi
+else
+    echo "  $FIRMWARE_UTILS_FILE already exists."
+fi
+
+
