@@ -120,4 +120,46 @@ else
     echo "  $FIRMWARE_UTILS_FILE already exists."
 fi
 
+# ubus 2024-10-20-252a9b0c
+UBUS_FILE="ubus-2024-10-20-252a9b0c.tar.xz"
+if [ ! -f "$DL_DIR/$UBUS_FILE" ]; then
+    echo "Checking $UBUS_FILE..."
+    echo "  Manual repack from GitHub mirror..."
+
+    TMP_WORK_DIR="$DL_DIR/tmp_repack_ubus"
+    mkdir -p "$TMP_WORK_DIR"
+    
+    # Clone to a specifically named directory
+    REPO_DIR_NAME="ubus-2024-10-20-252a9b0c"
+    
+    # Use the official GitHub mirror
+    git clone https://github.com/openwrt/ubus.git "$TMP_WORK_DIR/$REPO_DIR_NAME"
+    if [ $? -eq 0 ]; then
+        cd "$TMP_WORK_DIR/$REPO_DIR_NAME"
+        # The full hash from the user's error log
+        git checkout 252a9b0c1774790fb9c25735d5a09c27dba895db
+        rm -rf .git
+        cd ..
+        
+        # Tar and compress
+        tar --numeric-owner --owner=0 --group=0 --sort=name -cJf "$DL_DIR/$UBUS_FILE" "$REPO_DIR_NAME"
+        
+        if [ $? -eq 0 ]; then
+             echo "  Success: $UBUS_FILE created."
+        else
+             echo "  Failed to pack $UBUS_FILE"
+        fi
+        
+        # Cleanup
+        cd "$DL_DIR"
+        rm -rf "$TMP_WORK_DIR"
+    else
+        echo "  Failed to clone ubus from GitHub"
+        rm -rf "$TMP_WORK_DIR"
+    fi
+else
+    echo "  $UBUS_FILE already exists."
+fi
+
+
 

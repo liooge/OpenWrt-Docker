@@ -119,12 +119,13 @@ jobs:
         $GITHUB_WORKSPACE/scripts/preset-terminal-tools.sh
         $GITHUB_WORKSPACE/scripts/preset-adguard-core.sh $CLASH_KERNEL
 
-    - name: Cache DL Packages
-      uses: actions/cache@v4
+    - name: Restore DL Cache
+      uses: actions/cache/restore@v4
       with:
         path: ${{ env.OPENWRT_PATH }}/dl
-        key: dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ hashFiles('configs/x86_64-mini.config') }}
+        key: dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ hashFiles('configs/x86_64-mini.config') }}-${{ github.run_id }}
         restore-keys: |
+             dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ hashFiles('configs/x86_64-mini.config') }}-
              dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-
 
     - name: Download DL Package
@@ -162,6 +163,13 @@ jobs:
       run: |
         cd $OPENWRT_PATH
         make -j1 V=s
+
+    - name: Save DL Cache
+      uses: actions/cache/save@v4
+      if: always()
+      with:
+        path: ${{ env.OPENWRT_PATH }}/dl
+        key: dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ hashFiles('configs/x86_64-mini.config') }}-${{ github.run_id }}
 
     - name: Check Compile Status
       id: compile
