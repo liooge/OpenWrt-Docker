@@ -138,6 +138,14 @@ jobs:
         $GITHUB_WORKSPACE/scripts/preset-clash-core.sh $CLASH_KERNEL
         $GITHUB_WORKSPACE/scripts/preset-terminal-tools.sh
 
+    - name: Cache DL Packages
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.OPENWRT_PATH }}/dl
+        key: dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ hashFiles('configs/armv8-mini.config') }}
+        restore-keys: |
+             dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-
+
     - name: Download DL Package
       run: |
         chmod +x $GITHUB_WORKSPACE/scripts/dl.sh
