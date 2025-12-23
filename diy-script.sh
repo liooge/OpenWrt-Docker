@@ -114,22 +114,25 @@ find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/..\/..\/lang
 find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' {}
 find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/PKG_SOURCE_URL:=@GHCODELOAD/PKG_SOURCE_URL:=https:\/\/codeload.github.com/g' {}
 # Global replace of git.openwrt.org to github.com/openwrt matches
-# 1. Replace the domain definition in rules.mk and includes
-find . -name "rules.mk" -o -name "*.mk" | xargs -r sed -i 's/git.openwrt.org/github.com\/openwrt/g'
+# 1. Replace the domain definition in include/download.mk, rules.mk and other includes
+find . -name "download.mk" -o -name "rules.mk" -o -name "*.mk" | xargs -r sed -i 's/git.openwrt.org/github.com\/openwrt/g'
 
-# 2. Fix the path mapping (remove /project/ and /feed/ because github.com/openwrt/project/repo does not exist)
-#    This handles patterns like $(PROJECT_GIT)/project/repo.git -> $(PROJECT_GIT)/repo.git
-#    We look for variables ending in _GIT followed by /project/ or /feed/
+# 2. Fix the path mapping in Makefiles
+#    Remove /project/ and /feed/ because GitHub repos are flattened (github.com/openwrt/repo)
+#    Matches: $(PROJECT_GIT)/project/repo.git -> $(PROJECT_GIT)/repo.git
 find . -name "Makefile" | xargs -r sed -i 's/$(PROJECT_GIT)\/project\//$(PROJECT_GIT)\//g'
 find . -name "Makefile" | xargs -r sed -i 's/$(OPENWRT_GIT)\/project\//$(OPENWRT_GIT)\//g'
+find . -name "Makefile" | xargs -r sed -i 's/$(LEDE_GIT)\/project\//$(LEDE_GIT)\//g'
 find . -name "Makefile" | xargs -r sed -i 's/$(PROJECT_GIT)\/feed\//$(PROJECT_GIT)\//g'
 find . -name "Makefile" | xargs -r sed -i 's/$(OPENWRT_GIT)\/feed\//$(OPENWRT_GIT)\//g'
+find . -name "Makefile" | xargs -r sed -i 's/$(LEDE_GIT)\/feed\//$(LEDE_GIT)\//g'
 
-# 3. Fallback for literal URLs (if any left)
+# 3. Fallback for literal URLs (older packages or hardcoded strings)
 find . -name "*.mk" -o -name "Makefile" -o -name "feeds.conf.default" | xargs -r sed -i 's/git:\/\/git.openwrt.org\/project\//https:\/\/github.com\/openwrt\//g'
 find . -name "*.mk" -o -name "Makefile" -o -name "feeds.conf.default" | xargs -r sed -i 's/https:\/\/git.openwrt.org\/project\//https:\/\/github.com\/openwrt\//g'
 find . -name "*.mk" -o -name "Makefile" -o -name "feeds.conf.default" | xargs -r sed -i 's/git:\/\/git.openwrt.org\/feed\//https:\/\/github.com\/openwrt\//g'
 find . -name "*.mk" -o -name "Makefile" -o -name "feeds.conf.default" | xargs -r sed -i 's/https:\/\/git.openwrt.org\/feed\//https:\/\/github.com\/openwrt\//g'
+
 
 
 
