@@ -93,13 +93,16 @@ jobs:
         DEVICE_SUBTARGET=$(cat .config | grep CONFIG_TARGET_SUBTARGET | awk -F '"' '{print $2}')
         echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_ENV
 
-    - name: Cache Toolchain
+    - name: Restore Toolchain Cache
       if: env.CACHE_TOOLCHAIN == 'true'
-      uses: HiGarfield/cachewrtbuild@main
+      uses: actions/cache/restore@v4
       with:
-        ccache: false
-        mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
-        prefix: ${{ env.OPENWRT_PATH }}
+        path: ${{ env.OPENWRT_PATH }}/staging_dir
+        key: toolchain-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ hashFiles('configs/x86_64-mini.config') }}-${{ github.run_id }}
+        restore-keys: |
+             toolchain-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ hashFiles('configs/x86_64-mini.config') }}-
+             toolchain-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-
+             toolchain-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-
 
     - name: Install Feeds
       run: |
@@ -163,6 +166,13 @@ jobs:
       run: |
         cd $OPENWRT_PATH
         make -j1 V=s
+
+    - name: Save Toolchain Cache
+      if: always()
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.OPENWRT_PATH }}/staging_dir
+        key: toolchain-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ hashFiles('configs/x86_64-mini.config') }}-${{ github.run_id }}
 
     - name: Save DL Cache
       uses: actions/cache/save@v4
