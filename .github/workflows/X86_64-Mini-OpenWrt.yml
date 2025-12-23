@@ -167,6 +167,10 @@ jobs:
         cd $OPENWRT_PATH
         make -j1 V=s
 
+    - name: Check Space Usage
+      if: failure()
+      run: df -hT
+
     - name: Save Toolchain Cache
       if: always()
       uses: actions/cache/save@v4
