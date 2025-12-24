@@ -173,12 +173,6 @@ jobs:
       if: always()
       run: df -hT
 
-    - name: Save Toolchain Cache
-      if: always()
-      uses: actions/cache/save@v4
-      with:
-        path: ${{ env.OPENWRT_PATH }}/staging_dir
-        key: toolchain-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ hashFiles('configs/x86_64-mini.config') }}-${{ github.run_id }}
 
     - name: Save DL Cache
       uses: actions/cache/save@v4
