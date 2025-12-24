@@ -247,3 +247,7 @@ jobs:
           - ${{ env.COMMIT_DATE }}
           - ${{ env.COMMIT_MESSAGE }}
           - ${{ env.COMMIT_HASH }}
+
+    - name: Check Space Usage
+      if: always()
+      run: df -hT
