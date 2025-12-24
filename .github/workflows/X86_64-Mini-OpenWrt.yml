@@ -170,7 +170,7 @@ jobs:
         make -j1 V=s
 
     - name: Check Space Usage
-      if: failure()
+      if: always()
       run: df -hT
 
     - name: Save Toolchain Cache
