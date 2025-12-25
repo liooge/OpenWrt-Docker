@@ -161,6 +161,13 @@ jobs:
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
+        
+    - name: Save DL Cache
+      uses: actions/cache/save@v4
+      if: always()
+      with:
+        path: ${{ env.OPENWRT_PATH }}/dl
+        key: dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ hashFiles('configs/armv8-mini.config') }}-${{ github.run_id }}
 
 
     - name: Compile Firmware (Parallel)
@@ -193,12 +200,6 @@ jobs:
       run: df -hT
 
 
-    - name: Save DL Cache
-      uses: actions/cache/save@v4
-      if: always()
-      with:
-        path: ${{ env.OPENWRT_PATH }}/dl
-        key: dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ hashFiles('configs/armv8-mini.config') }}-${{ github.run_id }}
 
     - name: Check Compile Status
       id: compile
