@@ -106,11 +106,6 @@ jobs:
              toolchain-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-
              toolchain-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-
 
-    - name: Install Feeds
-      run: |
-        cd $OPENWRT_PATH
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
 
     - name: Load Custom Configuration
       run: |
