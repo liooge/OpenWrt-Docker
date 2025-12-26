@@ -172,12 +172,18 @@ jobs:
              dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ hashFiles('configs/armv8-mini.config') }}-
              dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-
 
+    - name: Check Config Restore DL Cache
+      run: |
+        cd $OPENWRT_PATH
+        echo "[DEBUG] .config check after custom config:"
+        cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armvirt" || echo "Target vars not found"
+
+
     - name: Download DL Package
       run: |
         chmod +x $GITHUB_WORKSPACE/scripts/dl.sh
         $GITHUB_WORKSPACE/scripts/dl.sh $OPENWRT_PATH
         cd $OPENWRT_PATH
-        make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
