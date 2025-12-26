@@ -154,7 +154,16 @@ jobs:
     - name: Load Custom Configuration
       run: |
         [ -e files ] && mv files $OPENWRT_PATH/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $OPENWRT_PATH/.config
+        echo "Current Directory: $PWD"
+        ls -l configs/
+        echo "Moving $CONFIG_FILE to $OPENWRT_PATH/.config"
+        if [ -f "$CONFIG_FILE" ]; then
+          cat "$CONFIG_FILE" | grep CONFIG_TARGET
+          cp -f "$CONFIG_FILE" "$OPENWRT_PATH/.config"  # Use cp instead of mv to preserve source for debug if needed
+        else
+          echo "::error::Config file $CONFIG_FILE not found!"
+          exit 1
+        fi
 
     - name: Check Config After Custom Config
       run: |
@@ -184,6 +193,7 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/scripts/dl.sh
         $GITHUB_WORKSPACE/scripts/dl.sh $OPENWRT_PATH
         cd $OPENWRT_PATH
+        make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -194,14 +204,6 @@ jobs:
         echo "[DEBUG] .config check after download/defconfig:"
         cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armvirt" || echo "Target vars not found"
         
-    - name: Save DL Cache
-      uses: actions/cache/save@v4
-      if: always()
-      with:
-        path: ${{ env.OPENWRT_PATH }}/dl
-        key: dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ hashFiles('configs/armv8-mini.config') }}-${{ github.run_id }}
-
-
 
     - name: Check Config Before Compile
       run: |
