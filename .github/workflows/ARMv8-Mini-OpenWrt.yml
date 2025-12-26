@@ -147,6 +147,13 @@ jobs:
         $GITHUB_WORKSPACE/scripts/preset-clash-core.sh $CLASH_KERNEL
         $GITHUB_WORKSPACE/scripts/preset-terminal-tools.sh
 
+    - name: Check Config After Custom Config
+      run: |
+        cd $OPENWRT_PATH
+        echo "[DEBUG] .config check after custom config:"
+        cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armvirt" || echo "Target vars not found"
+
+
     - name: Restore DL Cache
       uses: actions/cache/restore@v4
       with:
@@ -165,6 +172,12 @@ jobs:
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
+
+    - name: Check Config After Download
+      run: |
+        cd $OPENWRT_PATH
+        echo "[DEBUG] .config check after download/defconfig:"
+        cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armvirt" || echo "Target vars not found"
         
     - name: Save DL Cache
       uses: actions/cache/save@v4
