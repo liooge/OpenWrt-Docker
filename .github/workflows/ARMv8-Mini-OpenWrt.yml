@@ -37,7 +37,6 @@ jobs:
       DEVICE_SUBTARGET: ${{ steps.variable.outputs.DEVICE_SUBTARGET }}
 
     steps:
-    
     - name: Maximize Build Space
       uses: easimon/maximize-build-space@master
       with:
