@@ -151,8 +151,8 @@ jobs:
         cd $OPENWRT_PATH
         mkdir -p files/etc/uci-defaults
         cp $GITHUB_WORKSPACE/scripts/init-settings.sh files/etc/uci-defaults/99-init-settings
-        echo -e "$(nproc) thread compile"
-        make -j$(nproc)
+        echo -e "$(nproc) * 2 thread compile"
+        make -j8
 
     - name: Compile Firmware (Retry -j1)
       id: compile_single
