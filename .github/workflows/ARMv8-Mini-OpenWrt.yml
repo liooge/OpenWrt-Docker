@@ -239,7 +239,7 @@ jobs:
 
   Package:
     needs: [Build]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.10
 
     env:
       COMMIT_AUTHOR: ${{ needs.Build.outputs.COMMIT_AUTHOR }}
