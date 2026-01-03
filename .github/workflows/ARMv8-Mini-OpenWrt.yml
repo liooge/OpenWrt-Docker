@@ -239,7 +239,7 @@ jobs:
 
   Package:
     needs: [Build]
-    runs-on: ubuntu-22.10
+    runs-on: ubuntu-22.04
 
     env:
       COMMIT_AUTHOR: ${{ needs.Build.outputs.COMMIT_AUTHOR }}
@@ -252,14 +252,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@main
-
-    - name: Initialization Environment
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        sudo -E apt-get -y update
-        sudo -E apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
-        sudo timedatectl set-timezone "$TZ"
 
     - name: Maximize Build Space
       uses: easimon/maximize-build-space@master
@@ -274,6 +266,16 @@ jobs:
 
     - name: Check Space Usage
       run: df -hT
+
+    - name: Initialization Environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo -E apt-get -y update
+        sudo -E apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
+        sudo timedatectl set-timezone "$TZ"
+
+
 
     - name: Download Armvirt Firmware
       id: download
