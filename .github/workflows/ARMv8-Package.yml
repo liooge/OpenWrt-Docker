@@ -1,11 +1,12 @@
 name: ARMv8 Package
 
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
   workflow_dispatch:
-#  schedule:
-#    - cron: 0 15 * * *
-  watch:
-    types: started
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
@@ -60,6 +61,7 @@ jobs:
     - name: Download Armvirt Firmware
       id: download
       run: |
+        set -x
         FIRMWARE_PATH=openwrt/bin/targets/armvirt/64
         [ -d $FIRMWARE_PATH ] || mkdir -p $FIRMWARE_PATH
         FIRMWARE_URL=$(curl -s "https://api.github.com/repos/$GITHUB_REPOSITORY/releases" | grep -o "ROOTFS_${{ matrix.version }}.*rootfs.tar.gz")
