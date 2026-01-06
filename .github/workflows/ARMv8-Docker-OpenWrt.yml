@@ -113,7 +113,7 @@ jobs:
       run: |
         cd $OPENWRT_PATH
         echo "[DEBUG] .config Target check before compile:"
-        cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armvirt|CONFIG_TARGET_x86" | head -20
+        cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armsr|CONFIG_TARGET_x86" | head -20
 
     - name: Compile Firmware (Parallel)
       id: compile_parallel

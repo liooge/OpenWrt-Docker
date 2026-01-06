@@ -62,7 +62,7 @@ jobs:
       id: download
       run: |
         set -x
-        FIRMWARE_PATH=openwrt/bin/targets/armvirt/64
+        FIRMWARE_PATH=openwrt/bin/targets/armsr/64
         [ -d $FIRMWARE_PATH ] || mkdir -p $FIRMWARE_PATH
         FIRMWARE_URL=$(curl -s "https://api.github.com/repos/$GITHUB_REPOSITORY/releases" | grep -o "ROOTFS_${{ matrix.version }}.*rootfs.tar.gz")
         wget -q -P $FIRMWARE_PATH https://github.com/$GITHUB_REPOSITORY/releases/download/$FIRMWARE_URL
@@ -98,10 +98,10 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.PACKAGED_OUTPUTPATH }}/*
         body: |
-          **This is OpenWrt Firmware for Armvirt 64**
+          **This is OpenWrt Firmware for Armsr 64**
           ### 📒 固件信息
           - 🚀 ${{ matrix.explain }}
-          - 💻 平台架构: armvirt-64
+          - 💻 平台架构: armsr-64
           - ⚽ 固件源码: ${{ env.REPO_URL }}
           - 💝 源码分支: ${{ env.REPO_BRANCH }}
           - 🌐 默认地址: 192.168.1.1

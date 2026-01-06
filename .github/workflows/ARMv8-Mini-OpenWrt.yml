@@ -142,7 +142,7 @@ jobs:
       run: |
         cd $OPENWRT_PATH
         echo "[DEBUG] .config Target check before compile:"
-        cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armvirt|CONFIG_TARGET_x86" | head -20
+        cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armsr|CONFIG_TARGET_x86" | head -20
 
     - name: Compile Firmware (Parallel)
       id: compile_parallel
@@ -281,7 +281,7 @@ jobs:
       id: download
       run: |
         set -x
-        FIRMWARE_PATH=openwrt/bin/targets/armvirt/64
+        FIRMWARE_PATH=openwrt/bin/targets/armsr/64
         [ -d $FIRMWARE_PATH ] || mkdir -p $FIRMWARE_PATH
         cd $FIRMWARE_PATH
         wget -q $(curl -s "https://api.github.com/repos/$GITHUB_REPOSITORY/releases" | grep "$FIRMWARE_TAG.*rootfs.tar.gz" | awk -F '"' '{print $4}')
@@ -317,7 +317,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: ${{ env.PACKAGED_OUTPUTPATH }}/*
         body: |
-          **This is OpenWrt Firmware for Armvirt 64**
+          **This is OpenWrt Firmware for Armsr 64**
           ### 📒 固件信息
           - 🚀 ARMv8 精简版，主打科学上网适合养老
           - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
