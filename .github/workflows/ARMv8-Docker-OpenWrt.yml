@@ -12,7 +12,7 @@ env:
   DIY_SCRIPT: diy-script.sh
   CLASH_KERNEL: arm64
   DOCKER_BUILD: buildImageX.sh
-  DOCKER_IMAGE: summary/openwrt-aarch64
+  DOCKER_IMAGE: legogo/openwrt-aarch64
   TZ: Asia/Shanghai
 
 jobs:
@@ -22,6 +22,17 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@main
+
+    - name: Maximize Build Space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 2048
+        swap-size-mb: 1
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
 
     - name: Check Server Performance
       run: |
@@ -42,15 +53,15 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        docker rmi $(docker images -q)
-        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android $AGENT_TOOLSDIRECTORY
         sudo -E apt-get -y update
         sudo -E apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
-        sudo -E apt-get -y autoremove --purge
-        sudo -E apt-get -y clean
         sudo timedatectl set-timezone "$TZ"
 
+    - name: Check Space Usage
+      run: df -hT
+
     - name: Clone Source Code
+      id: clone
       run: |
         df -hT $GITHUB_WORKSPACE
         git clone $REPO_URL -b $REPO_BRANCH openwrt
@@ -58,6 +69,21 @@ jobs:
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
         version=$(cat "package/lean/default-settings/files/zzz-default-settings" | grep DISTRIB_REVISION= | awk -F "'" '{print $2}')
         echo "TAG=$version" >> $GITHUB_ENV
+
+    - name: Generate Variables
+      id: variable
+      run: |
+        cp $CONFIG_FILE $OPENWRT_PATH/.config
+        cd $OPENWRT_PATH
+        make defconfig > /dev/null 2>&1
+        SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
+        echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
+        DEVICE_TARGET=$(cat .config | grep CONFIG_TARGET_BOARD | awk -F '"' '{print $2}')
+        echo "DEVICE_TARGET=$DEVICE_TARGET" >> $GITHUB_ENV
+        echo "DEVICE_TARGET=$DEVICE_TARGET" >> $GITHUB_OUTPUT
+        DEVICE_SUBTARGET=$(cat .config | grep CONFIG_TARGET_SUBTARGET | awk -F '"' '{print $2}')
+        echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_ENV
+        echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_OUTPUT
 
     - name: Install Feeds
       run: |
@@ -69,12 +95,11 @@ jobs:
       run: |
         [ -e files ] && mv files $OPENWRT_PATH/files
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $OPENWRT_PATH/.config
-        sed -i '/\/clash_/d; /.dat/d' scripts/preset-clash-core.sh
         chmod +x $GITHUB_WORKSPACE/scripts/*.sh
         chmod +x $DIY_SCRIPT
         cd $OPENWRT_PATH
         $GITHUB_WORKSPACE/$DIY_SCRIPT
-        $GITHUB_WORKSPACE/scripts/preset-clash-core.sh $CLASH_KERNEL
+        #$GITHUB_WORKSPACE/scripts/preset-clash-core.sh $CLASH_KERNEL
 
     - name: Download DL Package
       run: |
@@ -84,15 +109,48 @@ jobs:
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Compile Firmware
-      id: compile
+    - name: Check Config Before Compile
+      run: |
+        cd $OPENWRT_PATH
+        echo "[DEBUG] .config Target check before compile:"
+        cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armvirt|CONFIG_TARGET_x86" | head -20
+
+    - name: Compile Firmware (Parallel)
+      id: compile_parallel
+      continue-on-error: true
       run: |
         cd $OPENWRT_PATH
         mkdir -p files/etc/uci-defaults
         cp $GITHUB_WORKSPACE/scripts/init-settings.sh files/etc/uci-defaults/99-init-settings
-        echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s
-        echo "status=success" >> $GITHUB_OUTPUT
+        echo -e "$(nproc) * 2 thread compile"
+        make -j8
+
+    - name: Compile Firmware (Retry -j1)
+      id: compile_single
+      if: steps.compile_parallel.outcome == 'failure'
+      continue-on-error: true
+      run: |
+        cd $OPENWRT_PATH
+        make -j1
+
+    - name: Compile Firmware (Retry -j1 V=s)
+      id: compile_verbose
+      if: steps.compile_parallel.outcome == 'failure' && steps.compile_single.outcome == 'failure'
+      run: |
+        cd $OPENWRT_PATH
+        make -j1 V=s
+
+    - name: Check Compile Status
+      id: compile
+      if: always()
+      run: |
+        if [ "${{ steps.compile_parallel.outcome }}" == "success" ] || \
+           [ "${{ steps.compile_single.outcome }}" == "success" ] || \
+           [ "${{ steps.compile_verbose.outcome }}" == "success" ]; then
+          echo "status=success" >> $GITHUB_OUTPUT
+        else
+          exit 1
+        fi
 
     - name: Generate Firmware
       if: steps.compile.outputs.status == 'success'

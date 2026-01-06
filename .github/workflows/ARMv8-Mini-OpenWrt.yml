@@ -280,6 +280,7 @@ jobs:
     - name: Download Armvirt Firmware
       id: download
       run: |
+        set -x
         FIRMWARE_PATH=openwrt/bin/targets/armvirt/64
         [ -d $FIRMWARE_PATH ] || mkdir -p $FIRMWARE_PATH
         cd $FIRMWARE_PATH
