@@ -2,10 +2,8 @@ name: ARMv8 Package
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - 'README.md'
+    paths:
+      - '.github/workflows/ARMv8-Package.yml'
   workflow_dispatch:
 
 env:

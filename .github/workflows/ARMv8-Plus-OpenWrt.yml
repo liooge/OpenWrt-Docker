@@ -1,6 +1,9 @@
 name: ARMv8 Plus OpenWrt
 
 on:
+  push:
+    paths:
+      - '.github/workflows/ARMv8-Plus-OpenWrt.yml'
   workflow_dispatch:
   schedule:
     - cron: 0 20 * * *

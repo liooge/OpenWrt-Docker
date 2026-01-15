@@ -2,10 +2,8 @@ name: ARMv8 Mini OpenWrt
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - 'README.md'
+    paths:
+      - '.github/workflows/ARMv8-Mini-OpenWrt.yml'
   workflow_dispatch:
   schedule:
     - cron: 0 20 * * *

@@ -1,6 +1,9 @@
 name: ARMv8 Docker OpenWrt
 
 on:
+  push:
+    paths:
+      - '.github/workflows/ARMv8-Docker-OpenWrt.yml'
   workflow_dispatch:
   schedule:
     - cron: 0 23 * * 5

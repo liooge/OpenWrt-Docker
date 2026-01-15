@@ -1,6 +1,9 @@
 name: ARMv8 Docker BuildX
 
 on:
+  push:
+    paths:
+      - '.github/workflows/ARMv8-Docker-BuildX.yml'
   workflow_dispatch:
   schedule:
     - cron: 0 0 * * 6

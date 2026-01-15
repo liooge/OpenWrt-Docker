@@ -1,6 +1,9 @@
 name: Delete Old Workflows
 
 on:
+  push:
+    paths:
+      - '.github/workflows/Delete-Old-Workflows.yml'
   workflow_dispatch:
   schedule:
     - cron: 0 3 * * *

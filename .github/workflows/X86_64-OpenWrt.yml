@@ -1,6 +1,9 @@
 name: X86_64 OpenWrt
 
 on:
+  push:
+    paths:
+      - '.github/workflows/X86_64-OpenWrt.yml'
   workflow_dispatch:
   schedule:
     - cron: 0 19 * * *
