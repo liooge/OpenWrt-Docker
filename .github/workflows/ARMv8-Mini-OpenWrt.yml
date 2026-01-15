@@ -289,6 +289,14 @@ jobs:
         echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
         echo "DATE1=$(date +"%y.%m.%d")" >> $GITHUB_ENV
 
+    - name: Remap /opt to Workspace
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/opt_ws
+        sudo rm -rf /opt
+        sudo ln -sf $GITHUB_WORKSPACE/opt_ws /opt
+        echo "Remapped /opt to $GITHUB_WORKSPACE/opt_ws"
+        df -hT
+
     - name: Package OpenWrt Firmware
       if: steps.download.outputs.status == 'success'
       uses: ophub/flippy-openwrt-actions@main
