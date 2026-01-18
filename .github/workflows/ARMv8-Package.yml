@@ -23,8 +23,6 @@ jobs:
         include:
         - version: MINI
           explain: ARMv8 精简版，主打科学上网适合养老
-        - version: PLUS
-          explain: ARMv8 多功能版，集成插件多适合折腾
 
     steps:
     - name: Checkout
