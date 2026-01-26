@@ -1,7 +1,17 @@
 #!/bin/bash
 
 TMPDIR=openwrt-armsr
-ROOTFS=openwrt-armsr-64-generic-rootfs.tar.gz
+# Auto-detect the rootfs file (workflow copies *rootfs.tar.gz to this directory)
+ROOTFS=$(ls -1 *rootfs.tar.gz 2>/dev/null | head -1)
+
+if [ -z "$ROOTFS" ] || [ ! -f "$ROOTFS" ]; then
+    echo "ERROR: No rootfs.tar.gz file found in current directory!"
+    echo "Available files:"
+    ls -la
+    exit 1
+fi
+
+echo "Using rootfs file: $ROOTFS"
 
 [ -d "$TMPDIR" ] && rm -rf "$TMPDIR"
 mkdir -p "$TMPDIR" && gzip -dc ${ROOTFS} | ( cd "$TMPDIR" && tar xf - && rm -rf ./lib/firmware/* && rm -rf ./lib/modules/*)
