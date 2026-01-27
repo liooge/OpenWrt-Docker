@@ -15,7 +15,7 @@ env:
   DIY_SCRIPT: diy-mini.sh
   CLASH_KERNEL: arm64
   DOCKER_BUILD: buildImageX.sh
-  DOCKER_IMAGE: legogo/openwrt-aarch64
+  DOCKER_IMAGE: legogo/openwrt-tiny
   TAG: mini
   TZ: Asia/Shanghai
 
@@ -157,6 +157,7 @@ jobs:
       if: steps.compile.outputs.status == 'success'
       id: generate
       run: |
+        set -x
         cd $OPENWRT_PATH/bin/targets/*/*
         cat config.buildinfo
         cp *rootfs.tar.gz $GITHUB_WORKSPACE/docker
