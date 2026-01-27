@@ -33,9 +33,6 @@ jobs:
             platform: linux/amd64
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@main
-
     - name: Maximize Build Space
       uses: easimon/maximize-build-space@master
       with:
@@ -46,6 +43,9 @@ jobs:
         remove-haskell: 'true'
         remove-codeql: 'true'
         remove-docker-images: 'true'
+
+    - name: Checkout
+      uses: actions/checkout@main
 
     - name: Check Server Performance
       run: |
