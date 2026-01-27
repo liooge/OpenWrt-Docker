@@ -15,7 +15,7 @@ env:
   DIY_SCRIPT: diy-script.sh
   CLASH_KERNEL: arm64
   DOCKER_BUILD: buildImageX.sh
-  DOCKER_IMAGE: legogo/openwrt-aarch64
+  DOCKER_IMAGE: legogo/openwrt-tiny
   TZ: Asia/Shanghai
 
 jobs:
