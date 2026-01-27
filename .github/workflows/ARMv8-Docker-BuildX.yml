@@ -83,7 +83,7 @@ jobs:
     - name: Generate Variables
       id: variable
       run: |
-        cp ${{ matrix.config }} $OPENWRT_PATH/.config
+        cp $GITHUB_WORKSPACE/${{ matrix.config }} $OPENWRT_PATH/.config
         cd $OPENWRT_PATH
         make defconfig > /dev/null 2>&1
         SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
@@ -104,9 +104,9 @@ jobs:
     - name: Load Custom Configuration
       run: |
         [ -e files ] && mv files $OPENWRT_PATH/files
-        [ -e ${{ matrix.config }} ] && mv ${{ matrix.config }} $OPENWRT_PATH/.config
+        [ -e $GITHUB_WORKSPACE/${{ matrix.config }} ] && mv $GITHUB_WORKSPACE/${{ matrix.config }} $OPENWRT_PATH/.config
         chmod +x $GITHUB_WORKSPACE/scripts/*.sh
-        chmod +x ${{ matrix.diy_script }}
+        chmod +x $GITHUB_WORKSPACE/${{ matrix.diy_script }}
         cd $OPENWRT_PATH
         $GITHUB_WORKSPACE/${{ matrix.diy_script }}
         #$GITHUB_WORKSPACE/scripts/preset-clash-core.sh arm64
