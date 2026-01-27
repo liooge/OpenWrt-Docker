@@ -66,6 +66,7 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
+        set -x
         sudo -E apt-get -y update
         sudo -E apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
         sudo timedatectl set-timezone "$TZ"
@@ -75,6 +76,7 @@ jobs:
 
     - name: Clone Source Code
       run: |
+        set -x
         df -hT $GITHUB_WORKSPACE
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
@@ -83,6 +85,7 @@ jobs:
     - name: Generate Variables
       id: variable
       run: |
+        set -x
         cp $GITHUB_WORKSPACE/${{ matrix.config }} $OPENWRT_PATH/.config
         cd $OPENWRT_PATH
         make defconfig > /dev/null 2>&1
@@ -97,12 +100,14 @@ jobs:
 
     - name: Install Feeds
       run: |
+        set -x
         cd $OPENWRT_PATH
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
     - name: Load Custom Configuration
       run: |
+        set -x
         [ -e files ] && mv files $OPENWRT_PATH/files
         [ -e $GITHUB_WORKSPACE/${{ matrix.config }} ] && mv $GITHUB_WORKSPACE/${{ matrix.config }} $OPENWRT_PATH/.config
         chmod +x $GITHUB_WORKSPACE/scripts/*.sh
@@ -113,6 +118,7 @@ jobs:
 
     - name: Download DL Package
       run: |
+        set -x
         cd $OPENWRT_PATH
         make defconfig
         make download -j8
@@ -121,6 +127,7 @@ jobs:
 
     - name: Check Config Before Compile
       run: |
+        set -x
         cd $OPENWRT_PATH
         echo "[DEBUG] Building for arch: ${{ matrix.arch }}"
         echo "[DEBUG] .config Target check before compile:"
@@ -130,6 +137,7 @@ jobs:
       id: compile_parallel
       continue-on-error: true
       run: |
+        set -x
         cd $OPENWRT_PATH
         mkdir -p files/etc/uci-defaults
         cp $GITHUB_WORKSPACE/scripts/init-settings.sh files/etc/uci-defaults/99-init-settings
@@ -141,6 +149,7 @@ jobs:
       if: steps.compile_parallel.outcome == 'failure'
       continue-on-error: true
       run: |
+        set -x
         cd $OPENWRT_PATH
         make -j1
 
@@ -148,6 +157,7 @@ jobs:
       id: compile_verbose
       if: steps.compile_parallel.outcome == 'failure' && steps.compile_single.outcome == 'failure'
       run: |
+        set -x
         cd $OPENWRT_PATH
         make -j1 V=s
 
@@ -155,6 +165,7 @@ jobs:
       id: compile
       if: always()
       run: |
+        set -x
         if [ "${{ steps.compile_parallel.outcome }}" == "success" ] || \
            [ "${{ steps.compile_single.outcome }}" == "success" ] || \
            [ "${{ steps.compile_verbose.outcome }}" == "success" ]; then
