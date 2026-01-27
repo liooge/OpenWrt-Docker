@@ -1,4 +1,4 @@
-name: ARMv8 Docker BuildX
+name: Docker BuildX Multi-Arch
 
 on:
   push:
@@ -11,17 +11,26 @@ on:
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
-  CONFIG_FILE: configs/armv8-docker-mini.config
-  DIY_SCRIPT: diy-mini.sh
-  CLASH_KERNEL: arm64
-  DOCKER_BUILD: buildImageX.sh
   DOCKER_IMAGE: legogo/openwrt-tiny
-  TAG: mini
   TZ: Asia/Shanghai
 
 jobs:
   Build:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            config: configs/armv8-docker-mini.config
+            diy_script: diy-mini.sh
+            tag: mini
+            platform: linux/arm64
+          - arch: x86_64
+            config: configs/x86_64-docker.config
+            diy_script: diy-script.sh
+            tag: x86
+            platform: linux/amd64
 
     steps:
     - name: Checkout
@@ -74,7 +83,7 @@ jobs:
     - name: Generate Variables
       id: variable
       run: |
-        cp $CONFIG_FILE $OPENWRT_PATH/.config
+        cp ${{ matrix.config }} $OPENWRT_PATH/.config
         cd $OPENWRT_PATH
         make defconfig > /dev/null 2>&1
         SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
@@ -95,12 +104,12 @@ jobs:
     - name: Load Custom Configuration
       run: |
         [ -e files ] && mv files $OPENWRT_PATH/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $OPENWRT_PATH/.config
+        [ -e ${{ matrix.config }} ] && mv ${{ matrix.config }} $OPENWRT_PATH/.config
         chmod +x $GITHUB_WORKSPACE/scripts/*.sh
-        chmod +x $DIY_SCRIPT
+        chmod +x ${{ matrix.diy_script }}
         cd $OPENWRT_PATH
-        $GITHUB_WORKSPACE/$DIY_SCRIPT
-        #$GITHUB_WORKSPACE/scripts/preset-clash-core.sh $CLASH_KERNEL
+        $GITHUB_WORKSPACE/${{ matrix.diy_script }}
+        #$GITHUB_WORKSPACE/scripts/preset-clash-core.sh arm64
 
     - name: Download DL Package
       run: |
@@ -113,6 +122,7 @@ jobs:
     - name: Check Config Before Compile
       run: |
         cd $OPENWRT_PATH
+        echo "[DEBUG] Building for arch: ${{ matrix.arch }}"
         echo "[DEBUG] .config Target check before compile:"
         cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armsr|CONFIG_TARGET_x86" | head -20
 
@@ -162,7 +172,7 @@ jobs:
         cat config.buildinfo
         cp *rootfs.tar.gz $GITHUB_WORKSPACE/docker
         cd $GITHUB_WORKSPACE/docker
-        chmod +x $DOCKER_BUILD && ./$DOCKER_BUILD
+        chmod +x buildImageX.sh && ./buildImageX.sh
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Set up QEMU
@@ -182,7 +192,7 @@ jobs:
       uses: docker/build-push-action@master
       with:
         context: docker
-        platforms: linux/arm64
+        platforms: ${{ matrix.platform }}
         push: true
         tags: |
-          ${{ env.DOCKER_IMAGE }}:${{ env.TAG }}
+          ${{ env.DOCKER_IMAGE }}:${{ matrix.tag }}
