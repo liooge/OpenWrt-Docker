@@ -226,6 +226,13 @@ jobs:
          username: ${{ secrets.DOCKER_USERNAME }}
          password: ${{ secrets.DOCKER_PASSWORD }}
 
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@master
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Build and Push Docker
       if: steps.generate.outputs.status == 'success'
       uses: docker/build-push-action@master
@@ -235,6 +242,7 @@ jobs:
         push: true
         tags: |
           ${{ env.DOCKER_IMAGE }}:${{ matrix.tag }}
+          ghcr.io/${{ github.repository_owner }}/openwrt-tiny:${{ matrix.tag }}
 
   Create-Manifest:
     needs: Build
@@ -249,10 +257,21 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@master
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create and Push Multi-arch Manifest
         run: |
           docker buildx imagetools create -t $DOCKER_IMAGE:latest \
             $DOCKER_IMAGE:mini \
             $DOCKER_IMAGE:x86
+          docker buildx imagetools create -t $GHCR_IMAGE:latest \
+            $GHCR_IMAGE:mini \
+            $GHCR_IMAGE:x86
         env:
           DOCKER_IMAGE: legogo/openwrt-tiny
+          GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/openwrt-tiny
