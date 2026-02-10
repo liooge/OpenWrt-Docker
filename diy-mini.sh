@@ -15,6 +15,10 @@ rm -rf feeds/packages/net/msd_lite
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-mosdns
 rm -rf feeds/luci/applications/luci-app-netdata
+rm -rf feeds/packages/net/xray-core
+rm -rf feeds/packages/net/xray-plugin
+rm -rf feeds/packages/net/v2ray-core
+rm -rf feeds/packages/net/v2ray-geodata
 
 # Git稀疏克隆，只克隆指定目录到本地
 function git_sparse_clone() {
