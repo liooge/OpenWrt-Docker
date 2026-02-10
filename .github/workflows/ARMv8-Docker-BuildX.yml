@@ -1,6 +1,9 @@
-name: ARMv8 Docker BuildX
+name: Docker BuildX Multi-Arch
 
 on:
+  push:
+    paths:
+      - '.github/workflows/ARMv8-Docker-BuildX.yml'
   workflow_dispatch:
   schedule:
     - cron: 0 0 * * 6
@@ -8,19 +11,39 @@ on:
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
-  CONFIG_FILE: configs/armv8-docker-mini.config
-  DIY_SCRIPT: diy-mini.sh
-  CLASH_KERNEL: arm64
-  DOCKER_BUILD: buildImageX.sh
-  DOCKER_IMAGE: summary/openwrt-aarch64
-  TAG: mini
+  DOCKER_IMAGE: legogo/openwrt-tiny
   TZ: Asia/Shanghai
 
 jobs:
   Build:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            config: configs/armv8-docker-mini.config
+            diy_script: diy-mini.sh
+            tag: mini
+            platform: linux/arm64
+          - arch: x86_64
+            config: configs/x86_64-docker.config
+            diy_script: diy-mini.sh
+            tag: x86
+            platform: linux/amd64
 
     steps:
+    - name: Maximize Build Space
+      uses: easimon/maximize-build-space@master
+      with:
+        root-reserve-mb: 2048
+        swap-size-mb: 1
+        remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+
     - name: Checkout
       uses: actions/checkout@main
 
@@ -43,65 +66,152 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        docker rmi $(docker images -q)
+        set -x
+        # Aggressive cleanup to free disk space
+        docker rmi $(docker images -q) 2>/dev/null || true
         sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android $AGENT_TOOLSDIRECTORY
+        sudo rm -rf /opt/ghc /usr/local/share/boost /usr/share/swift
+        sudo rm -rf /usr/local/go /usr/local/julia* /usr/local/.ghcup
+        sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* snapd || true
         sudo -E apt-get -y update
         sudo -E apt-get -y install $(curl -fsSL is.gd/depends_ubuntu_2204)
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get -y clean
         sudo timedatectl set-timezone "$TZ"
+        echo "=== Disk space after cleanup ==="
+        df -hT
+
+    - name: Check Space Usage
+      run: df -hT
 
     - name: Clone Source Code
       run: |
+        set -x
         df -hT $GITHUB_WORKSPACE
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
         echo "OPENWRT_PATH=$PWD" >> $GITHUB_ENV
 
+    - name: Generate Variables
+      id: variable
+      run: |
+        set -x
+        cp $GITHUB_WORKSPACE/${{ matrix.config }} $OPENWRT_PATH/.config
+        cd $OPENWRT_PATH
+        make defconfig > /dev/null 2>&1
+        SOURCE_REPO="$(echo $REPO_URL | awk -F '/' '{print $(NF)}')"
+        echo "SOURCE_REPO=$SOURCE_REPO" >> $GITHUB_ENV
+        DEVICE_TARGET=$(cat .config | grep CONFIG_TARGET_BOARD | awk -F '"' '{print $2}')
+        echo "DEVICE_TARGET=$DEVICE_TARGET" >> $GITHUB_ENV
+        echo "DEVICE_TARGET=$DEVICE_TARGET" >> $GITHUB_OUTPUT
+        DEVICE_SUBTARGET=$(cat .config | grep CONFIG_TARGET_SUBTARGET | awk -F '"' '{print $2}')
+        echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_ENV
+        echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_OUTPUT
+
     - name: Install Feeds
       run: |
+        set -x
         cd $OPENWRT_PATH
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
     - name: Load Custom Configuration
       run: |
+        set -x
         [ -e files ] && mv files $OPENWRT_PATH/files
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE $OPENWRT_PATH/.config
-        sed -i '/\/clash_/d; /.dat/d' scripts/preset-clash-core.sh
+        [ -e $GITHUB_WORKSPACE/${{ matrix.config }} ] && mv $GITHUB_WORKSPACE/${{ matrix.config }} $OPENWRT_PATH/.config
         chmod +x $GITHUB_WORKSPACE/scripts/*.sh
-        chmod +x $DIY_SCRIPT
+        chmod +x $GITHUB_WORKSPACE/${{ matrix.diy_script }}
         cd $OPENWRT_PATH
-        $GITHUB_WORKSPACE/$DIY_SCRIPT
-        $GITHUB_WORKSPACE/scripts/preset-clash-core.sh $CLASH_KERNEL
+        $GITHUB_WORKSPACE/${{ matrix.diy_script }}
+        #$GITHUB_WORKSPACE/scripts/preset-clash-core.sh arm64
 
     - name: Download DL Package
       run: |
+        set -x
         cd $OPENWRT_PATH
         make defconfig
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
 
-    - name: Compile Firmware
-      id: compile
+    - name: Check Config Before Compile
       run: |
+        set -x
+        cd $OPENWRT_PATH
+        echo "[DEBUG] Building for arch: ${{ matrix.arch }}"
+        echo "[DEBUG] .config Target check before compile:"
+        cat .config | grep -E "CONFIG_TARGET_(BOARD|SUBTARGET|ARCH|PROFILE)|CONFIG_TARGET_armsr|CONFIG_TARGET_x86" | head -20
+
+    - name: Compile Firmware (Parallel)
+      id: compile_parallel
+      continue-on-error: true
+      run: |
+        set -x
         cd $OPENWRT_PATH
         mkdir -p files/etc/uci-defaults
         cp $GITHUB_WORKSPACE/scripts/init-settings.sh files/etc/uci-defaults/99-init-settings
-        echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s
-        echo "status=success" >> $GITHUB_OUTPUT
+        echo -e "$(nproc) * 2 thread compile"
+        make -j8
+
+    - name: Compile Firmware (Retry -j1)
+      id: compile_single
+      if: steps.compile_parallel.outcome == 'failure'
+      continue-on-error: true
+      run: |
+        set -x
+        cd $OPENWRT_PATH
+        make -j1
+
+    - name: Compile Firmware (Retry -j1 V=s)
+      id: compile_verbose
+      if: steps.compile_parallel.outcome == 'failure' && steps.compile_single.outcome == 'failure'
+      run: |
+        set -x
+        cd $OPENWRT_PATH
+        make -j1 V=s
+
+    - name: Check Compile Status
+      id: compile
+      if: always()
+      run: |
+        set -x
+        if [ "${{ steps.compile_parallel.outcome }}" == "success" ] || \
+           [ "${{ steps.compile_single.outcome }}" == "success" ] || \
+           [ "${{ steps.compile_verbose.outcome }}" == "success" ]; then
+          echo "status=success" >> $GITHUB_OUTPUT
+        else
+          exit 1
+        fi
+
+    - name: Cleanup After Compile
+      if: steps.compile.outputs.status == 'success'
+      run: |
+        set -x
+        cd $OPENWRT_PATH
+        # Remove build directory to free space (keep bin only)
+        rm -rf build_dir staging_dir tmp
+        df -hT
 
     - name: Generate Firmware
       if: steps.compile.outputs.status == 'success'
       id: generate
       run: |
+        set -x
         cd $OPENWRT_PATH/bin/targets/*/*
+        echo "=== Current directory ==="
+        pwd
+        echo "=== All files in targets directory ==="
+        ls -la
+        echo "=== Looking for tar.gz files ==="
+        ls -la *.tar.gz || echo "No tar.gz files found"
+        echo "=== Looking for rootfs files ==="
+        ls -la *rootfs* || echo "No rootfs files found"
+        echo "=== config.buildinfo ==="
         cat config.buildinfo
         cp *rootfs.tar.gz $GITHUB_WORKSPACE/docker
         cd $GITHUB_WORKSPACE/docker
-        chmod +x $DOCKER_BUILD && ./$DOCKER_BUILD
+        chmod +x buildImageX.sh && ./buildImageX.sh
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Set up QEMU
@@ -121,7 +231,28 @@ jobs:
       uses: docker/build-push-action@master
       with:
         context: docker
-        platforms: linux/arm64
+        platforms: ${{ matrix.platform }}
         push: true
         tags: |
-          ${{ env.DOCKER_IMAGE }}:${{ env.TAG }}
+          ${{ env.DOCKER_IMAGE }}:${{ matrix.tag }}
+
+  Create-Manifest:
+    needs: Build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@master
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@master
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create and Push Multi-arch Manifest
+        run: |
+          docker buildx imagetools create -t $DOCKER_IMAGE:latest \
+            $DOCKER_IMAGE:mini \
+            $DOCKER_IMAGE:x86
+        env:
+          DOCKER_IMAGE: legogo/openwrt-tiny

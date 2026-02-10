@@ -1,6 +1,9 @@
 name: Delete Old Workflows
 
 on:
+  push:
+    paths:
+      - '.github/workflows/Delete-Old-Workflows.yml'
   workflow_dispatch:
   schedule:
     - cron: 0 3 * * *
@@ -14,7 +17,7 @@ jobs:
       uses: Mattraks/delete-workflow-runs@main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        retain_days: 7
+        retain_days: 3
         keep_minimum_runs: 0
 
     - name: Delete Old Releases

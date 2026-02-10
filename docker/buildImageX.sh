@@ -1,7 +1,17 @@
 #!/bin/bash
 
-TMPDIR=openwrt-armvirt
-ROOTFS=openwrt-armvirt-64-generic-rootfs.tar.gz
+TMPDIR=openwrt-armsr
+# Auto-detect the rootfs file (workflow copies *rootfs.tar.gz to this directory)
+ROOTFS=$(ls -1 *rootfs.tar.gz 2>/dev/null | head -1)
+
+if [ -z "$ROOTFS" ] || [ ! -f "$ROOTFS" ]; then
+    echo "ERROR: No rootfs.tar.gz file found in current directory!"
+    echo "Available files:"
+    ls -la
+    exit 1
+fi
+
+echo "Using rootfs file: $ROOTFS"
 
 [ -d "$TMPDIR" ] && rm -rf "$TMPDIR"
 mkdir -p "$TMPDIR" && gzip -dc ${ROOTFS} | ( cd "$TMPDIR" && tar xf - && rm -rf ./lib/firmware/* && rm -rf ./lib/modules/*)
@@ -69,5 +79,5 @@ ddd=$((sss/86400)) && \
 sed -e "s/:0:0:99999:7:::/:${ddd}:0:99999:7:::/" -i "${TMPDIR}/etc/shadow" && \
 sed -e "s/root::/root:\$1\$0yUsq67p\$RC5cEtaQpM6KHQfhUSIAl\.:/" -i "${TMPDIR}/etc/shadow"
 
-(cd "$TMPDIR" && tar cf ../openwrt-armvirt-64-default-rootfs-patched.tar .) && \
+(cd "$TMPDIR" && tar cf ../openwrt-armsr-64-default-rootfs-patched.tar .) && \
 rm -rf "$TMPDIR"
