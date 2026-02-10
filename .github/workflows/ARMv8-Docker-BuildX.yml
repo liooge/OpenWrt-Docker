@@ -6,7 +6,7 @@ on:
       - '.github/workflows/ARMv8-Docker-BuildX.yml'
   workflow_dispatch:
   schedule:
-    - cron: 0 0 * * 6
+    - cron: 0 3 * * 5
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
